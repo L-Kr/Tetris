@@ -11,6 +11,11 @@ public class QueueManager : Singleton<QueueManager>
 
     public void Init()
     {
+        GameObject root = new GameObject("queue");
+        root.transform.position = Camera.main.ScreenToWorldPoint(new Vector3(0, -10, 0));
+        root.SetActive(false);
+        DataManager.Instance.queueTransform = root.transform;
+
         queueNow = new Queue<TetrominoBase>(QueueMaxCount);
         for (int i = 0; i < QueueMaxCount; i++)
             queueNow.Enqueue(RandomTetromino());
@@ -21,15 +26,25 @@ public class QueueManager : Singleton<QueueManager>
         TetrominoBase t = queueNow.Dequeue();
         queueNow.Enqueue(RandomTetromino());
         UpdatePos();
-        t.OnShow();
+        t.Initial();
         return t;
     }
 
     private TetrominoBase RandomTetromino()
     {
-        int i = UnityEngine.Random.Range(0, DataManager.Instance.tetrominoTypes.Count - 1);
-        Type t = DataManager.Instance.tetrominoTypes[i];
-        return PoolManager.Instance.TetrominoPop(t);
+        TetrominoBase tb = null;
+        int i = UnityEngine.Random.Range(0, DataManager.Instance.tetrominoSpriteName.Count - 1);
+        foreach(var t in DataManager.Instance.tetrominoSpriteName.Keys)
+        {
+            if (i == 0)
+            {
+                tb = PoolManager.Instance.TetrominoPop(t);
+                tb.Initial();
+                tb.InitialOnQueue();
+            }
+            i--;
+        }
+        return tb;
     }
 
     private void UpdatePos()

@@ -6,12 +6,8 @@ using UnityEngine;
 public class TetrominoBase
 {
     public RectObject[] rects;
-
-    public void OnShow()
-    {
-        foreach (var rect in rects)
-            rect.PosStateNow = 0;
-    }
+    protected const int posStartX = (int)(DataManager.BackWidth * 0.5f);
+    protected const int posStartY = DataManager.BackHight + 1;
 
     public void InitialOnQueue()
     {
@@ -21,17 +17,12 @@ public class TetrominoBase
 
     public virtual void Initial()
     {
-        Register();
     }
 
     public virtual void Destroy()
     {
-
-    }
-
-    protected virtual void Register()
-    {
-
+        foreach (var rect in rects)
+            DataManager.Instance.dropedObj.Add(rect);
     }
 
     /// <summary>
@@ -39,19 +30,23 @@ public class TetrominoBase
     /// </summary>
     public void UpdatePos()
     {
-        foreach(var rect in rects)
+        Debug.Log(rects[0].PosVirtualNow);
+        foreach (var rect in rects)
         {
-            if(!rect.IsPassble(0, -1))
+            if (!rect.IsPassble(0, -1))
             {
-                TetrominoBase next = QueueManager.Instance.GetNextTetromino();
-                DataManager.Instance.ObjectNow = next;
+                DataManager.Instance.ObjectNow = QueueManager.Instance.GetNextTetromino();
                 foreach (var r in rects)
-                    DataManager.Instance.CollisionNow[rect.PosVirtualNow.x][rect.PosVirtualNow.y] = true;
+                    DataManager.Instance.CollisionNow[r.PosVirtualNow.x][r.PosVirtualNow.y] = true;
+                Destroy();
+                DataManager.Instance.CheckKill();
                 return;
             }
         }
         foreach (var rect in rects)
+        {
             rect.PosVirtualNow = new Vector2Int(rect.PosVirtualNow.x, rect.PosVirtualNow.y - 1);
+        }
     }
 
     /// <summary>
@@ -62,7 +57,7 @@ public class TetrominoBase
     {
         foreach (var rect in rects)
         {
-            if (!rect.IsPassble(0, -1))
+            if (!rect.IsPassble(offsetX, offsetY))
             {
                 return;
             }

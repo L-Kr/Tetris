@@ -4,8 +4,9 @@ using UnityEngine;
 
 public class RectObject
 {
-    private Vector2Int[] posList;
+    public Vector2Int[] PosList;
     private GameObject go;
+    private string spriteName;  //带路径
 
     private int _posStateNow = 0;
     public int PosStateNow
@@ -16,13 +17,8 @@ public class RectObject
         }
         set
         {
-            if(_posStateNow != value)
-            {
-                _posStateNow = value;
-                int x = posList[_posStateNow].x;
-                int y = posList[_posStateNow].y;
-                go.transform.position = DataManager.Instance.Pos[x][y];
-            }
+            _posStateNow = value;
+            UpdateGoPos();
         }
     }
 
@@ -30,13 +26,14 @@ public class RectObject
     {
         get
         {
-            return posList[_posStateNow];
+            return PosList[_posStateNow];
         }
         set
         {
-            Vector2Int offset = posList[_posStateNow] - value;
-            for (int i = 0; i < posList.Length; i++)
-                posList[i] -= offset;
+            Vector2Int offset = PosList[_posStateNow] - value;
+            for (int i = 0; i < PosList.Length; i++)
+                PosList[i] -= offset;
+            UpdateGoPos();
         }
     }
     
@@ -48,24 +45,25 @@ public class RectObject
     /// <returns></returns>
     public bool IsPassble(int offsetX = 0, int offsetY = 0)
     {
-        int x = posList[PosStateNow].x + offsetX;
-        int y = posList[PosStateNow].y + offsetY;
-        bool passible = !DataManager.Instance.CollisionNow[x][y];
-        return passible;
+        int x = PosList[PosStateNow].x + offsetX;
+        int y = PosList[PosStateNow].y + offsetY;
+        if (x < 0 || y < 0 || x >= DataManager.BackWidth)
+            return false;
+        return !DataManager.Instance.CollisionNow[x][y];
     }
 
-    public RectObject(Vector2Int[] posList, Sprite sprite)
+    public RectObject(string spriteName)
     {
-        this.posList = posList;
         go = new GameObject();
-        go.AddComponent<SpriteRenderer>().sprite = sprite;
+        go.AddComponent<SpriteRenderer>().sprite = Resources.Load<Sprite>(spriteName);
+        this.spriteName = spriteName;
     }
 
     public void ChangeShape()
     {
-        if (posList == null)
+        if (PosList == null)
             return;
-        if (PosStateNow == posList.Length - 1)
+        if (PosStateNow == PosList.Length - 1)
             PosStateNow = 0;
         else
             PosStateNow++;
@@ -73,6 +71,33 @@ public class RectObject
 
     public void InitialOnQueue()
     {
-        go.transform.position = new Vector2(-2, 0);
+        go.transform.parent = DataManager.Instance.queueTransform;
+        go.transform.position = Vector2.zero;
+    }
+
+    public void Initial()
+    {
+        go.transform.parent = DataManager.Instance.rootTransform;
+        PosStateNow = 0;
+    }
+
+    public void Destroy()
+    {
+        go.transform.parent = DataManager.Instance.poolTransform;
+        go.transform.position = Vector2.zero;
+        PosStateNow = 0;
+        PosList = null;
+        PoolManager.Instance.RectObjPush(spriteName, this);
+    }
+
+    private void UpdateGoPos()
+    {
+        int x = PosList[_posStateNow].x;
+        int y = PosList[_posStateNow].y;
+        go.transform.position = DataManager.Instance.Pos[x][y];
+        if (y >=  DataManager.BackHight)
+            go.SetActive(false);
+        else if (!go.activeSelf)
+            go.SetActive(true);
     }
 }
